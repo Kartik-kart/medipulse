@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPulse — Emergency Medical Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0a1628;
+    --blue: #1a56db;
+    --blue-light: #3b82f6;
+    --cyan: #06b6d4;
+    --white: #f8faff;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text-muted: rgba(255,255,255,0.45);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--navy); color: var(--white); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(26,86,219,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(26,86,219,0.06) 1px, transparent 1px);
+    background-size: 60px 60px; pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: ''; position: fixed; top: -200px; right: -200px; width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(26,86,219,0.15) 0%, transparent 70%); pointer-events: none; z-index: 0;
+  }
+  .orb2 { position: fixed; bottom: -150px; left: -150px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(6,182,212,0.1) 0%, transparent 70%); pointer-events: none; z-index: 0; }
+  main { position: relative; z-index: 1; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 48px; border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; background: rgba(10,22,40,0.8); }
+  .logo { display: flex; align-items: center; gap: 10px; font-family: 'DM Serif Display', serif; font-size: 1.5rem; letter-spacing: -0.02em; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--blue), var(--cyan)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+  .logo span { color: var(--cyan); }
+  .badge { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; background: rgba(26,86,219,0.2); border: 1px solid rgba(26,86,219,0.4); padding: 4px 10px; border-radius: 20px; color: var(--blue-light); }
+  .hero { padding: 60px 48px 40px; max-width: 900px; }
+  .hero-tag { display: inline-flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--cyan); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 16px; }
+  .hero-tag::before { content: ''; width: 6px; height: 6px; background: var(--cyan); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+  .hero h1 { font-family: 'DM Serif Display', serif; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 12px; }
+  .hero h1 em { font-style: italic; background: linear-gradient(135deg, var(--blue-light), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 1rem; color: var(--text-muted); font-weight: 300; line-height: 1.7; max-width: 540px; }
+  .content-grid { display: grid; grid-template-columns: 380px 1fr; gap: 24px; padding: 0 48px 48px; align-items: start; }
+  @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; padding: 0 20px 40px; } header { padding: 16px 20px; } .hero { padding: 40px 20px 30px; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; backdrop-filter: blur(8px); margin-bottom: 16px; }
+  .card-label { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 16px; }
+  .patient-selector { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .patient-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; }
+  .patient-btn:hover { border-color: rgba(26,86,219,0.4); background: rgba(26,86,219,0.08); }
+  .patient-btn.active { border-color: rgba(26,86,219,0.6); background: rgba(26,86,219,0.15); }
+  .patient-btn-name { font-weight: 500; }
+  .patient-btn-meta { font-size: 0.75rem; color: var(--text-muted); }
+  .patient-btn-actions { display: flex; gap: 6px; }
+  .delete-btn { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; border-radius: 6px; padding: 3px 8px; font-size: 0.72rem; cursor: pointer; transition: all 0.2s; }
+  .delete-btn:hover { background: rgba(239,68,68,0.3); }
+  .add-patient-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; background: rgba(6,182,212,0.08); border: 1px dashed rgba(6,182,212,0.3); border-radius: 10px; color: var(--cyan); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; }
+  .add-patient-btn:hover { background: rgba(6,182,212,0.15); border-color: rgba(6,182,212,0.5); }
+  .patient-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .avatar { width: 50px; height: 50px; background: linear-gradient(135deg, var(--blue), var(--cyan)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+  .patient-name { font-family: 'DM Serif Display', serif; font-size: 1.3rem; letter-spacing: -0.02em; }
+  .patient-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
+  .section-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); margin: 16px 0 8px; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { font-size: 0.78rem; padding: 4px 10px; border-radius: 20px; border: 1px solid; }
+  .tag-blue { background: rgba(26,86,219,0.15); border-color: rgba(26,86,219,0.3); color: #93c5fd; }
+  .tag-red { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+  .tag-amber { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #fcd34d; }
+  .med-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.83rem; }
+  .med-item:last-child { border-bottom: none; }
+  .med-dose { font-family: 'JetBrains Mono', monospace; font-size: 0.73rem; color: var(--text-muted); }
+  .analyze-panel { display: flex; flex-direction: column; gap: 16px; }
+  .symptom-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 1rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s; resize: none; min-height: 80px; }
+  .symptom-input::placeholder { color: var(--text-muted); }
+  .symptom-input:focus { border-color: rgba(26,86,219,0.5); box-shadow: 0 0 0 3px rgba(26,86,219,0.12); }
+  .analyze-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 13px 24px; background: linear-gradient(135deg, var(--blue), #1d4ed8); border: none; border-radius: 12px; color: white; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 10px; }
+  .analyze-btn:hover { background: linear-gradient(135deg, #2563eb, var(--blue)); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(26,86,219,0.3); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .loading { display: none; text-align: center; padding: 30px; }
+  .loading.active { display: block; }
+  .loader { display: inline-flex; gap: 6px; margin-bottom: 12px; }
+  .loader span { width: 8px; height: 8px; background: var(--blue-light); border-radius: 50%; animation: bounce 1.2s infinite ease-in-out; }
+  .loader span:nth-child(2) { animation-delay: 0.2s; background: var(--cyan); }
+  .loader span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-10px); opacity: 1; } }
+  .loading-text { font-size: 0.85rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  #results { display: none; }
+  #results.active { display: block; }
+  .risk-banner { border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .risk-label { font-size: 0.8rem; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+  .risk-badge { font-family: 'DM Serif Display', serif; font-size: 1.6rem; letter-spacing: -0.02em; }
+  .risk-icon { font-size: 2rem; }
+  .result-section { margin-bottom: 16px; }
+  .result-section-title { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+  .result-section-title::before { content: attr(data-icon); font-size: 0.9rem; margin-right: 6px; }
+  .result-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .result-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.86rem; line-height: 1.5; padding: 9px 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--border); }
+  .result-list li::before { content: attr(data-bullet); flex-shrink: 0; margin-top: 1px; }
+  .red-flags li { border-color: rgba(239,68,68,0.2); background: rgba(239,68,68,0.06); }
+  .summary-box { background: rgba(26,86,219,0.08); border: 1px solid rgba(26,86,219,0.2); border-radius: 12px; padding: 14px 18px; font-size: 0.86rem; line-height: 1.7; color: rgba(255,255,255,0.8); }
+  .error-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 12px; padding: 14px 18px; font-size: 0.86rem; color: #fca5a5; display: none; }
+  .error-box.active { display: block; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: #0f1e35; border: 1px solid var(--border); border-radius: 20px; padding: 32px; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-family: 'DM Serif Display', serif; font-size: 1.5rem; margin-bottom: 24px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .form-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; }
+  .form-input:focus { border-color: rgba(26,86,219,0.5); }
+  .form-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .btn-primary { flex: 1; padding: 12px; background: linear-gradient(135deg, var(--blue), #1d4ed8); border: none; border-radius: 10px; color: white; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+  .btn-secondary { padding: 12px 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; cursor: pointer; }
+  footer { text-align: center; padding: 28px 48px; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
+</style>
+</head>
+<body>
+<div class="orb2"></div>
+
+<!-- ADD PATIENT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>➕ Add New Patient</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="f-name" placeholder="John Smith">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Age</label>
+        <input class="form-input" id="f-age" type="number" placeholder="35">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Blood Type</label>
+      <select class="form-input" id="f-blood">
+        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+        <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Medical Conditions</label>
+      <input class="form-input" id="f-conditions" placeholder="Diabetes, Hypertension">
+      <div class="form-hint">Separate with commas</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Allergies</label>
+      <input class="form-input" id="f-allergies" placeholder="Penicillin:Anaphylaxis, Ibuprofen:Hives">
+      <div class="form-hint">Format: Substance:Reaction, separate with commas</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Medications</label>
+      <input class="form-input" id="f-medications" placeholder="Metformin:500mg:Twice daily, Aspirin:100mg:Once daily">
+      <div class="form-hint">Format: Name:Dose:Frequency, separate with commas</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Past Surgeries</label>
+      <input class="form-input" id="f-surgeries" placeholder="Appendectomy:2015, Knee Surgery:2020">
+      <div class="form-hint">Format: Name:Year, separate with commas</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="savePatient()">Save Patient</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">❤️</div>
+    Medi<span>Pulse</span>
+  </div>
+  <div class="badge">EMERGENCY AI SYSTEM</div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="hero-tag">AI-Powered Emergency Intelligence</div>
+    <h1>Medical history meets<br><em>instant AI analysis</em></h1>
+    <p>Manage patients and receive AI-powered emergency analysis cross-referenced with their complete medical history.</p>
+  </div>
+
+  <div class="content-grid">
+    <div>
+      <!-- PATIENT LIST -->
+      <div class="card">
+        <div class="card-label">👥 Patients</div>
+        <div class="patient-selector" id="patient-list"></div>
+        <button class="add-patient-btn" onclick="openModal()">➕ Add New Patient</button>
+      </div>
+
+      <!-- PATIENT PROFILE -->
+      <div class="card" id="profile-card">
+        <div class="card-label">📋 Patient Profile</div>
+        <div class="patient-header">
+          <div class="avatar">👤</div>
+          <div>
+            <div class="patient-name" id="patient-name">Select a patient</div>
+            <div class="patient-meta" id="patient-meta">—</div>
+          </div>
+        </div>
+        <div class="section-title">Medical Conditions</div>
+        <div class="tag-list" id="conditions"></div>
+        <div class="section-title">⚠️ Allergies</div>
+        <div class="tag-list" id="allergies"></div>
+        <div class="section-title">💊 Current Medications</div>
+        <div id="medications"></div>
+        <div class="section-title">🔪 Past Surgeries</div>
+        <div class="tag-list" id="surgeries"></div>
+      </div>
+    </div>
+
+    <!-- ANALYSIS PANEL -->
+    <div class="analyze-panel">
+      <div class="card">
+        <div class="card-label">⚙️ Backend Configuration</div>
+        <input class="form-input" id="backend-url" type="text" value="http://localhost:8000" placeholder="http://localhost:8000">
+      </div>
+
+      <div class="card">
+        <div class="card-label">🔍 Symptom Analysis</div>
+        <textarea class="symptom-input" id="symptom-input" placeholder="Describe the symptom (e.g. 'severe chest pain and shortness of breath')..."></textarea>
+        <button class="analyze-btn" id="analyze-btn" onclick="analyze()">
+          <span>⚡</span> Run Emergency Analysis
+        </button>
+      </div>
+
+      <div class="error-box" id="error-box"></div>
+
+      <div class="loading" id="loading">
+        <div class="loader"><span></span><span></span><span></span></div>
+        <div class="loading-text">Analyzing with AI...</div>
+      </div>
+
+      <div id="results" class="card fade-in">
+        <div class="card-label">🚨 Emergency Analysis</div>
+        <div class="risk-banner" id="risk-banner">
+          <div>
+            <div class="risk-label">Risk Level</div>
+            <div class="risk-badge" id="risk-badge">—</div>
+          </div>
+          <div class="risk-icon" id="risk-icon">—</div>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title" data-icon="🧠">Possible Causes</div>
+          <ul class="result-list" id="causes-list"></ul>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title" data-icon="🏥">Responder Checks</div>
+          <ul class="result-list" id="checks-list"></ul>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title" data-icon="🚨">Immediate Red Flags</div>
+          <ul class="result-list red-flags" id="flags-list"></ul>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title" data-icon="📝">Summary</div>
+          <div class="summary-box" id="summary-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>MediPulse v2.0 · Hackathon Demo · AI analysis is not a substitute for professional medical advice</footer>
+
+<script>
+  const BACKEND = () => document.getElementById('backend-url').value.trim().replace(/\/$/, '');
+  let currentPatientId = null;
+  let patients = [];
+
+  async function loadPatients() {
+    try {
+      const res = await fetch(`${BACKEND()}/patients`);
+      patients = await res.json();
+      renderPatientList();
+      if (patients.length > 0) selectPatient(patients[0].id);
+    } catch (e) {
+      document.getElementById('patient-name').textContent = 'Backend offline';
+    }
+  }
+
+  function renderPatientList() {
+    const list = document.getElementById('patient-list');
+    list.innerHTML = '';
+    patients.forEach(p => {
+      const div = document.createElement('div');
+      div.className = `patient-btn ${p.id === currentPatientId ? 'active' : ''}`;
+      div.innerHTML = `
+        <div onclick="selectPatient('${p.id}')" style="flex:1; cursor:pointer;">
+          <div class="patient-btn-name">${p.name}</div>
+          <div class="patient-btn-meta">Age ${p.age} · ${p.blood_type}</div>
+        </div>
+        <div class="patient-btn-actions">
+          ${p.id !== 'demo-001' ? `<button class="delete-btn" onclick="deletePatient('${p.id}')">🗑 Delete</button>` : ''}
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function selectPatient(id) {
+    currentPatientId = id;
+    const p = patients.find(p => p.id === id);
+    if (!p) return;
+
+    renderPatientList();
+
+    document.getElementById('patient-name').textContent = p.name;
+    document.getElementById('patient-meta').textContent = `Age ${p.age} · Blood Type ${p.blood_type}`;
+
+    const conditions = document.getElementById('conditions');
+    conditions.innerHTML = '';
+    p.conditions.forEach(c => { conditions.innerHTML += `<span class="tag tag-blue">${c}</span>`; });
+
+    const allergies = document.getElementById('allergies');
+    allergies.innerHTML = '';
+    p.allergies.forEach(a => { allergies.innerHTML += `<span class="tag tag-red">⚠ ${a.substance}</span>`; });
+
+    const meds = document.getElementById('medications');
+    meds.innerHTML = '';
+    p.medications.forEach(m => { meds.innerHTML += `<div class="med-item"><span>${m.name}</span><span class="med-dose">${m.dose} · ${m.frequency}</span></div>`; });
+
+    const surgeries = document.getElementById('surgeries');
+    surgeries.innerHTML = '';
+    p.surgeries.forEach(s => { surgeries.innerHTML += `<span class="tag tag-amber">${s.name} (${s.year})</span>`; });
+
+    document.getElementById('results').classList.remove('active');
+  }
+
+  async function deletePatient(id) {
+    if (!confirm('Delete this patient?')) return;
+    await fetch(`${BACKEND()}/patients/${id}`, { method: 'DELETE' });
+    await loadPatients();
+  }
+
+  function openModal() { document.getElementById('modal').classList.add('active'); }
+  function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+  async function savePatient() {
+    const name = document.getElementById('f-name').value.trim();
+    const age = parseInt(document.getElementById('f-age').value);
+    const blood_type = document.getElementById('f-blood').value;
+
+    if (!name || !age) { alert('Please enter name and age.'); return; }
+
+    const parseList = (val) => val.split(',').map(s => s.trim()).filter(Boolean);
+
+    const conditions = parseList(document.getElementById('f-conditions').value);
+
+    const allergies = parseList(document.getElementById('f-allergies').value).map(a => {
+      const [substance, reaction] = a.split(':');
+      return { substance: substance?.trim() || a, reaction: reaction?.trim() || 'Unknown' };
+    });
+
+    const medications = parseList(document.getElementById('f-medications').value).map(m => {
+      const [name, dose, frequency] = m.split(':');
+      return { name: name?.trim() || m, dose: dose?.trim() || 'Unknown', frequency: frequency?.trim() || 'Unknown' };
+    });
+
+    const surgeries = parseList(document.getElementById('f-surgeries').value).map(s => {
+      const [name, year] = s.split(':');
+      return { name: name?.trim() || s, year: parseInt(year) || 2020 };
+    });
+
+    const res = await fetch(`${BACKEND()}/patients`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, age, blood_type, conditions, allergies, medications, surgeries })
+    });
+
+    if (res.ok) {
+      closeModal();
+      await loadPatients();
+      const newPatient = await res.json();
+      selectPatient(newPatient.id);
+    }
+  }
+
+  async function analyze() {
+    if (!currentPatientId) { alert('Please select a patient first.'); return; }
+    const symptom = document.getElementById('symptom-input').value.trim();
+    if (!symptom) { alert('Please enter a symptom.'); return; }
+
+    const btn = document.getElementById('analyze-btn');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    const errorBox = document.getElementById('error-box');
+
+    btn.disabled = true;
+    loading.classList.add('active');
+    results.classList.remove('active');
+    errorBox.classList.remove('active');
+
+    try {
+      const res = await fetch(`${BACKEND()}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptom, patient_id: currentPatientId })
+      });
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Analysis failed'); }
+      const data = await res.json();
+      displayResults(data);
+    } catch (e) {
+      errorBox.textContent = `❌ Error: ${e.message}`;
+      errorBox.classList.add('active');
+    } finally {
+      btn.disabled = false;
+      loading.classList.remove('active');
+    }
+  }
+
+  function displayResults(data) {
+    const riskColors = { Low: '#22c55e', Medium: '#f59e0b', High: '#ef4444' };
+    const riskIcons = { Low: '🟢', Medium: '🟡', High: '🔴' };
+    const color = riskColors[data.risk_level] || '#f59e0b';
+    const banner = document.getElementById('risk-banner');
+    banner.style.background = `${color}18`;
+    banner.style.border = `1px solid ${color}40`;
+    document.getElementById('risk-badge').textContent = data.risk_level;
+    document.getElementById('risk-badge').style.color = color;
+    document.getElementById('risk-icon').textContent = riskIcons[data.risk_level] || '🟡';
+    document.getElementById('causes-list').innerHTML = data.possible_causes.map(c => `<li data-bullet="→">${c}</li>`).join('');
+    document.getElementById('checks-list').innerHTML = data.responder_checks.map(c => `<li data-bullet="✓">${c}</li>`).join('');
+    document.getElementById('flags-list').innerHTML = data.red_flags.map(f => `<li data-bullet="⚠">${f}</li>`).join('');
+    document.getElementById('summary-box').textContent = data.summary;
+    const results = document.getElementById('results');
+    results.classList.add('active');
+    results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadPatients();
+    document.getElementById('symptom-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.ctrlKey) analyze();
+    });
+  });
+</script>
+</body>
+</html>
